@@ -11,13 +11,17 @@ local Window = Rayfield:CreateWindow({
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 
--- Segédfüggvény a fegyver elővételéhez
+-- Biztonságos fegyver elővétel
 local function equipWeapon()
     local p = game.Players.LocalPlayer
-    local backpack = p.Backpack
     local char = p.Character
-    -- Megkeressük az első fegyvert (Combat vagy Sword)
-    for _, tool in pairs(backpack:GetChildren()) do
+    if not char then return end
+    
+    -- Ha már van valami a kezünkben, nem csinálunk semmit
+    if char:FindFirstChildOfClass("Tool") then return end
+    
+    -- Megkeressük az 1-es sloton lévő fegyvert (Combat/Fist)
+    for _, tool in pairs(p.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             char.Humanoid:EquipTool(tool)
             break
@@ -33,9 +37,11 @@ FarmTab:CreateToggle({
       if Value then
          task.spawn(function()
             while _G.AutoFarm do
-               pcall(function()
+               local success, err = pcall(function()
                   local target = nil
                   local dist = math.huge
+                  
+                  -- NPC keresés
                   for _, v in pairs(workspace.Enemies:GetChildren()) do
                      if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                         local d = (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -44,20 +50,28 @@ FarmTab:CreateToggle({
                   end
 
                   if target then
-                     equipWeapon() -- Fegyver kézbe vétele
-                     -- ÚJ POZÍCIÓ: Az NPC elé repülünk 2 méterrel, nem a feje fölé
-                     Modules.Tween.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5), 300)
+                     equipWeapon()
+                     -- POZÍCIÓ: 5 egységgel az NPC FÖLÉ megyünk, hogy ne lökjön el
+                     local farmPos = target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                     
+                     -- Csak akkor teleportálunk, ha messze vagyunk, hogy ne rángasson
+                     if (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - farmPos.p).Magnitude > 3 then
+                        Modules.Tween.To(farmPos, 300)
+                     end
+                     
+                     -- TÁMADÁS: Gyors egymásutánban többször
                      Modules.Net.Remotes.Attack:FireServer()
                   end
                end)
-               task.wait(0.1)
+               if not success then warn("Farm Error: " .. err) end
+               task.wait(0.15) -- Kicsit lassabb ciklus a stabilitásért
             end
          end)
       end
    end,
 })
 
--- System Tab az Unload gombbal
+-- System Tab
 local SystemTab = Window:CreateTab("System", 4483362458)
 SystemTab:CreateButton({
    Name = "Destroy Script (Unload)",
