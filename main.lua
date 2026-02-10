@@ -4,31 +4,27 @@ _G.AutoFarm = false
 
 local Window = Rayfield:CreateWindow({
    Name = "MATRIX HUB | BLOX FRUITS",
-   Theme = "Bloom",
+   Theme = "DarkBlue",
    ConfigurationSaving = { Enabled = false }
 })
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 
--- SPECIÁLIS ÜTÉS FUNKCIÓ
-local function superAttack()
+-- Fegyver és Ütés kényszerítése
+local function startPunching()
     local p = game.Players.LocalPlayer
     local char = p.Character
     if not char then return end
     
-    -- Fegyver kézbevétele
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then
-        tool = p.Backpack:FindFirstChild("Combat") or p.Backpack:FindFirstChildOfClass("Tool")
-        if tool then char.Humanoid:EquipTool(tool) end
+    local tool = char:FindFirstChildOfClass("Tool") or p.Backpack:FindFirstChild("Combat") or p.Backpack:FindFirstChildOfClass("Tool")
+    if tool and tool.Parent ~= char then 
+        char.Humanoid:EquipTool(tool) 
     end
     
     if tool then
-        -- 1. Direkt aktiválás
         tool:Activate()
-        -- 2. Egérkattintás szimulálása a virtuális felhasználóval
-        game:GetService("VirtualUser"):CaptureController()
-        game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
+        -- Közvetlen hívás a te net modulodból kinyerve
+        Modules.Net.Remotes.Attack:FireServer(0) 
     end
 end
 
@@ -54,30 +50,28 @@ FarmTab:CreateToggle({
                   end
 
                   if target then
-                     -- Pozíció: 5.2 méter (kicsit közelebb, mint eddig)
-                     local targetPos = target.HumanoidRootPart.CFrame * CFrame.new(0, 5.2, 0)
+                     -- MÓDOSÍTOTT POZÍCIÓ: 5 méterrel az NPC elé, nem a fejére!
+                     local targetPos = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
                      
-                     -- Távolság-alapú mozgás (ha 6 méteren belül vagyunk, NEM teleportálunk többet)
-                     if (hrp.Position - targetPos.p).Magnitude > 6 then
+                     if (hrp.Position - targetPos.p).Magnitude > 7 then
                         Modules.Tween.To(targetPos, 300)
                      else
-                        -- CSAK ITT ÁLLUNK MEG ÉS ÜTÜNK (nincs több mozgás parancs!)
+                        -- MEGÁLLÍTÁS: Ez a kulcs! Ha nem mozogsz, a szerver engedi a sebzést.
+                        Modules.Tween.Stop()
                         hrp.CFrame = targetPos
                         hrp.Velocity = Vector3.new(0,0,0)
                         
-                        superAttack() -- Aktiváljuk a "szimulált" kattintást
-                        Modules.Net.Remotes.Attack:FireServer()
+                        startPunching()
                      end
                   end
                end)
-               task.wait(0.1) -- Hagyunk időt az animációnak!
+               task.wait(0.1) -- Hagyni kell időt a szervernek regisztrálni
             end
          end)
       end
    end,
 })
 
--- System Tab
 local SystemTab = Window:CreateTab("System", 4483362458)
 SystemTab:CreateButton({
    Name = "Destroy Script (Unload)",
