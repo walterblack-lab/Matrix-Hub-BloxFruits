@@ -1,32 +1,41 @@
 --[[
-    MATRIX HUB - BLOX FRUITS (walterblack-lab edition)
-    Optimized for Solara & Baganito5
+    MATRIX HUB - JAVÍTOTT VERZIÓ (Baganito5)
+    Fix: Case-sensitive folder names (modules)
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Modules = _G.Matrix_Modules -- Feltételezve, hogy a betöltő scripted már definiálta
+
+-- MODULOK BIZTONSÁGI BETÖLTÉSE (Kisbetűs 'modules' mappával)
+if not _G.Matrix_Modules then
+    _G.Matrix_Modules = {
+        -- Itt is kisbetűsre javítva a path: /modules/
+        tween = loadstring(game:HttpGet("https://raw.githubusercontent.com/walterblack-lab/matrixv2/main/modules/tween.lua"))(),
+        net = loadstring(game:HttpGet("https://raw.githubusercontent.com/walterblack-lab/matrixv2/main/modules/net.lua"))()
+    }
+end
+
+local modules = _G.Matrix_Modules -- Kisbetűs változónév a konzisztencia miatt
+local lp = game.Players.LocalPlayer
+local char = lp.Character or lp.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+_G.AutoFarm = false
 
 local Window = Rayfield:CreateWindow({
    Name = "MATRIX HUB | BLOX FRUITS",
-   Theme = "DarkBlue",
+   Theme = "Bloom", 
    ConfigurationSaving = { Enabled = false }
 })
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 
--- VÁLTOZÓK
-_G.AutoFarm = false
-local lp = game.Players.LocalPlayer
-local char = lp.Character or lp.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
-
--- SEGÉDFÜGGVÉNY: A legközelebbi ellenség megkeresése
 local function getClosestNPC()
     local target = nil
     local dist = math.huge
-    if not workspace:FindFirstChild("Enemies") then return nil end
+    local enemies = workspace:FindFirstChild("Enemies")
+    if not enemies then return nil end
     
-    for _, v in pairs(workspace.Enemies:GetChildren()) do
+    for _, v in pairs(enemies:GetChildren()) do
         if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
             local d = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
             if d < dist then
@@ -38,70 +47,48 @@ local function getClosestNPC()
     return target
 end
 
--- FŐ CIKLUS (Combat & Farm)
 local function startFarm()
     task.spawn(function()
         while _G.AutoFarm do
-            local success, err = pcall(function()
-                local npc = getClosestNPC()
+            local npc = getClosestNPC()
+            if npc then
+                local npcHrp = npc.HumanoidRootPart
+                local targetPos = npcHrp.CFrame * CFrame.new(0, 5, 0)
                 
-                if npc then
-                    local npcHrp = npc.HumanoidRootPart
-                    -- Pozíció az NPC felett (idiothamgurger stílus)
-                    local targetPos = npcHrp.CFrame * CFrame.new(0, 5, 0)
-                    local distance = (hrp.Position - targetPos.Position).Magnitude
-
-                    if distance > 10 then
-                        -- TÁVOLI MOZGÁS: Itt használjuk a Tweent
-                        Modules.Tween.To(targetPos, 300)
-                    else
-                        -- KÖZELHARC: Itt állítjuk le a Tweent a fagyás elkerülésére
-                        Modules.Tween.Stop()
-                        
-                        -- 1. ÁLLAPOT: Hazudjuk azt a szervernek, hogy a földön futunk
-                        char.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
-                        
-                        -- 2. LOOKAT: Kényszerítjük, hogy az NPC-re nézzen (Kritikus a sebzéshez!)
-                        hrp.CFrame = CFrame.lookAt(targetPos.Position, npcHrp.Position)
-                        
-                        -- 3. STABILIZÁLÁS: Velocity nullázása (Hogy ne rángasson az animáció)
-                        hrp.Velocity = Vector3.new(0,0,0)
-
-                        -- 4. TÁMADÁS: Fegyvervétel és ütés
-                        local tool = char:FindFirstChildOfClass("Tool")
-                        if not tool then
-                            local combat = lp.Backpack:FindFirstChild("Combat") or lp.Backpack:FindFirstChildOfClass("Tool")
-                            if combat then char.Humanoid:EquipTool(combat) end
-                        else
-                            tool:Activate()
-                            -- A hálózati esemény hívása a Matrix modulodon keresztül
-                            Modules.Net.Remotes.Attack:FireServer(0)
+                if (hrp.Position - targetPos.Position).Magnitude > 10 then
+                    -- Javítva: modules.tween
+                    modules.tween.To(targetPos, 300)
+                else
+                    modules.tween.Stop()
+                    
+                    char.Humanoid:ChangeState(11)
+                    hrp.CFrame = CFrame.lookAt(hrp.Position, npcHrp.Position)
+                    hrp.Velocity = Vector3.new(0,0,0)
+                    
+                    local tool = char:FindFirstChildOfClass("Tool")
+                    if tool then
+                        tool:Activate()
+                        -- Javítva: modules.net
+                        if modules.net and modules.net.Remotes then
+                            modules.net.Remotes.Attack:FireServer(0)
                         end
                     end
                 end
-            end)
-            if not success then warn("Farm Error: " .. err) end
-            task.wait(0.05) -- Gyors frissítés
+            end
+            task.wait(0.05)
         end
     end)
 end
 
--- UI TOGGLE
 FarmTab:CreateToggle({
    Name = "Auto Farm (Baganito5 Mode)",
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
-      if Value then
-         startFarm()
-      else
-         Modules.Tween.Stop()
+      if Value then 
+         startFarm() 
+      else 
+         if modules.tween then modules.tween.Stop() end 
       end
    end,
-})
-
-Rayfield:Notify({
-   Title = "Matrix Hub Betöltve",
-   Content = "Üdv, Baganito5! A Solara optimalizált farm készen áll.",
-   Duration = 5
 })
