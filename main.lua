@@ -10,6 +10,9 @@ local Window = Rayfield:CreateWindow({
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 
+-- Virtuális egér a kattintáshoz
+local VirtualUser = game:GetService("VirtualUser")
+
 local function equipWeapon()
     local p = game.Players.LocalPlayer
     local char = p.Character
@@ -26,12 +29,10 @@ FarmTab:CreateToggle({
       if Value then
          task.spawn(function()
             while _G.AutoFarm do
-               local success, err = pcall(function()
+               pcall(function()
                   local lp = game.Players.LocalPlayer
-                  local char = lp.Character
-                  local hrp = char.HumanoidRootPart
+                  local hrp = lp.Character.HumanoidRootPart
                   
-                  -- NPC keresés
                   local target = nil
                   local dist = math.huge
                   for _, v in pairs(workspace.Enemies:GetChildren()) do
@@ -43,24 +44,26 @@ FarmTab:CreateToggle({
 
                   if target then
                      equipWeapon()
-                     -- TÁVOLSÁG: 5.5 méterrel az NPC fölé
+                     -- Stabil pozíció az NPC fölött
                      local targetPos = target.HumanoidRootPart.CFrame * CFrame.new(0, 5.5, 0)
                      
-                     -- MOZGÁS: Csak ha messze vagyunk (megszünteti a rángatást)
                      if (hrp.Position - targetPos.p).Magnitude > 5 then
                         Modules.Tween.To(targetPos, 300)
-                        task.wait(0.3) -- Hagyunk időt a megérkezésre
                      else
-                        -- FIXÁLÁS: Egy helyben tartunk, nem rángatunk
-                        hrp.Velocity = Vector3.new(0,0,0)
                         hrp.CFrame = targetPos
+                        hrp.Velocity = Vector3.new(0,0,0)
                         
-                        -- TÁMADÁS: Gyors, de nem akasztja meg a motort
+                        -- JAVÍTÁS: Virtuális kattintás szimulálása
+                        -- Ez olyan, mintha te nyomnád a bal klikket
+                        VirtualUser:CaptureController()
+                        VirtualUser:ClickButton1(Vector2.new(851, 158)) 
+                        
+                        -- Biztonsági mentés: a régi támadás kód is marad
                         Modules.Net.Remotes.Attack:FireServer()
                      end
                   end
                end)
-               task.wait(0.05) -- Ez a sebesség az ideális a szervernek
+               task.wait(0.1) -- Kicsit lassítva, hogy a kattintás regisztráljon
             end
          end)
       end
