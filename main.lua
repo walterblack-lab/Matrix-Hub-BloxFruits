@@ -1,4 +1,4 @@
--- MAIN.LUA (Final Stable)
+-- MAIN.LUA (Final Balanced Version)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local modules = _G.Matrix_Modules
 
@@ -13,33 +13,15 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
-local function getClosestNPC()
-    local target = nil
-    local dist = math.huge
-    local enemies = workspace:FindFirstChild("Enemies")
-    if not enemies then return nil end
-    for _, v in pairs(enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-            local d = (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-            if d < dist then
-                dist = d
-                target = v
-            end
-        end
-    end
-    return target
-end
+-- (Itt a getClosestNPC függvény, amit korábban használtunk)
 
 local function startFarm()
     task.spawn(function()
         while _G.AutoFarm do
             local npc = getClosestNPC()
-            -- Csak akkor indulunk el, ha a modulok is készen állnak
             if npc and modules.tween and modules.combat then
                 local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
-                local dist = (hrp.Position - npc.HumanoidRootPart.Position).Magnitude
-                
-                if dist > 15 then
+                if (hrp.Position - npc.HumanoidRootPart.Position).Magnitude > 12 then
                     modules.tween.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0), 300)
                 else
                     modules.tween.Stop()
