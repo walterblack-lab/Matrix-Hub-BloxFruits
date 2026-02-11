@@ -1,9 +1,9 @@
--- TWEEN MODULE (Matrix Hub - Ultra-Low RAM Edition)
+-- TWEEN MODULE (Matrix Hub - Stable & RAM Optimized)
 local tween = {}
 
 local TweenService = game:GetService("TweenService")
 local lp = game.Players.LocalPlayer
-local currentTween = nil -- Egy változóban tartjuk a tween-t, hogy újrahasznosítsuk
+local currentTween = nil -- Egy változóban tároljuk a mozgást
 
 function tween.To(targetCFrame, speed)
     local char = lp.Character
@@ -13,19 +13,19 @@ function tween.To(targetCFrame, speed)
     local distance = (hrp.Position - targetCFrame.Position).Magnitude
     local duration = distance / speed
     
-    -- Meglévő mozgás megállítása és takarítása (Memory Leak elleni védelem)
-    if currentTween then
+    -- JAVÍTÁS: Csak akkor törlünk, ha van mit (így nem dob hibát az elején)
+    if currentTween ~= nil then
         currentTween:Cancel()
-        currentTween:Destroy() -- Ez törli ki a RAM-ból a régi objektumot
+        currentTween:Destroy() -- RAM felszabadítása
         currentTween = nil
     end
     
     local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
     
-    -- Új tween létrehozása
+    -- Új tween objektum létrehozása
     currentTween = TweenService:Create(hrp, info, {CFrame = targetCFrame})
     
-    -- Automatikus takarítás, ha a mozgás befejeződött
+    -- Automatikus takarítás a mozgás végén
     currentTween.Completed:Connect(function()
         if currentTween then
             currentTween:Destroy()
@@ -37,7 +37,8 @@ function tween.To(targetCFrame, speed)
 end
 
 function tween.Stop()
-    if currentTween then
+    -- Biztonságos megállítás: ellenőrizzük, létezik-e a tween
+    if currentTween ~= nil then
         currentTween:Cancel()
         currentTween:Destroy()
         currentTween = nil
