@@ -1,16 +1,15 @@
--- MAIN.LUA (Baganito5 Edition - Target Lock & Unload)
+-- MAIN.LUA (Final Fix - Target Lock & Unload)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local modules = _G.Matrix_Modules
 _G.AutoFarm = false
 _G.SelectedWeapon = "Melee"
 
-local currentTarget = nil -- Célpont rögzítése
+local currentTarget = nil -- Rögzített célpont
 
 local Window = Rayfield:CreateWindow({ Name = "MATRIX HUB | PRO", Theme = "Bloom" })
 local FarmTab = Window:CreateTab("Auto Farm")
 local SettingsTab = Window:CreateTab("Settings")
 
--- Fegyver választó
 FarmTab:CreateDropdown({
    Name = "Weapon Type",
    Options = {"Melee", "Sword", "Blox Fruit"},
@@ -20,11 +19,11 @@ FarmTab:CreateDropdown({
 })
 
 local function getClosestNPC()
-    -- Ha már van célpontunk és él, ne keressünk újat
+    -- Ha van célpont és él, maradunk rajta (Target Lock)
     if currentTarget and currentTarget:FindFirstChild("Humanoid") and currentTarget.Humanoid.Health > 0 then
         return currentTarget
     end
-
+    
     local target, dist = nil, math.huge
     local enemies = workspace:FindFirstChild("Enemies") or workspace
     for _, v in pairs(enemies:GetChildren()) do
@@ -33,7 +32,7 @@ local function getClosestNPC()
             if d < dist then dist = d; target = v end
         end
     end
-    currentTarget = target -- Rögzítjük az új célpontot
+    currentTarget = target
     return target
 end
 
@@ -45,17 +44,15 @@ local function startFarm()
                 local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
                 local dist = (hrp.Position - npc.HumanoidRootPart.Position).Magnitude
                 
-                -- Közelebbi megállás (4 egység), hogy az ököl biztosan elérje
-                if dist > 4 then
-                    modules.tween.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), 300)
+                -- JAVÍTÁS: Közelebb (3.5) és alacsonyabbra (magasság: 2) megyünk
+                if dist > 3.5 then
+                    modules.tween.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0), 300)
                 else
                     modules.tween.Stop()
                     modules.combat.attack(npc, _G.SelectedWeapon)
                 end
-            else
-                if modules.tween then modules.tween.Stop() end
             end
-            task.wait(0.05)
+            task.wait(0.02) -- Gyorsabb frissítés a simább mozgásért
         end
     end)
 end
@@ -65,16 +62,16 @@ FarmTab:CreateToggle({
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
-      if Value then startFarm() else if modules.tween then modules.tween.Stop() end end
+      if Value then startFarm() else modules.tween.Stop() end
    end,
 })
 
--- UNLOAD (Soha nem felejtjük el!)
+-- UNLOAD GOMB (Fixálva, nem fog eltűnni!)
 SettingsTab:CreateButton({
    Name = "Unload Script",
    Callback = function()
       _G.AutoFarm = false
-      if modules.tween then modules.tween.Stop() end
+      modules.tween.Stop()
       Rayfield:Destroy()
       _G.Matrix_Modules = nil
    end,
