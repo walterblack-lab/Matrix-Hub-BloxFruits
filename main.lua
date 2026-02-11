@@ -1,4 +1,4 @@
--- MAIN.LUA (Matrix Hub - Damage Enforcer)
+-- MAIN.LUA (Matrix Hub - Manual-Style Distance Fix)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local modules = _G.Matrix_Modules
 
@@ -38,23 +38,7 @@ local function getClosestNPC()
     return target
 end
 
--- ÜTÉS HUROK (Kényszerített sebzés)
-local function startAttackLoop()
-    task.spawn(function()
-        while _G.AutoFarm do
-            if currentTarget and currentTarget:FindFirstChild("Humanoid") and currentTarget.Humanoid.Health > 0 then
-                local dist = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - currentTarget.HumanoidRootPart.Position).Magnitude
-                if dist < 5 then -- Csak ha elég közel vagyunk
-                    modules.combat.attack(currentTarget, _G.SelectedWeapon)
-                end
-            end
-            task.wait(0.1) -- Nagyon gyors ütés
-        end
-    end)
-end
-
 local function startFarm()
-    startAttackLoop() -- Elindítjuk az ütés folyamatot
     task.spawn(function()
         while _G.AutoFarm do
             local npc = getClosestNPC()
@@ -63,15 +47,18 @@ local function startFarm()
                 local targetHrp = npc.HumanoidRootPart
                 local distance = (myHrp.Position - targetHrp.Position).Magnitude
                 
-                if distance > 2.5 then -- Még közelebb megyünk
-                    if modules.spy then modules.spy.log("Teleporting: " .. npc.Name) end
-                    -- JAVÍTÁS: Közvetlenül elé teleportálunk
-                    modules.tween.To(targetHrp.CFrame * CFrame.new(0, 0, 1), 300)
+                -- Karakter NPC felé fordítása (hogy az ütés iránya jó legyen)
+                myHrp.CFrame = CFrame.lookAt(myHrp.Position, Vector3.new(targetHrp.Position.X, myHrp.Position.Y, targetHrp.Position.Z))
+
+                if distance > 4 then
+                    if modules.spy then modules.spy.log("Approaching: " .. npc.Name) end
+                    -- Távolság tartása: 2.5 egységre állunk meg tőle
+                    modules.tween.To(targetHrp.CFrame * CFrame.new(0, 0, 2.5), 300)
                 else
+                    -- Megállunk és ütjük
                     modules.tween.Stop()
-                    if modules.spy then modules.spy.log("Attacking: " .. npc.Name) end
-                    -- A karaktert az NPC felé fordítjuk folyamatosan
-                    myHrp.CFrame = CFrame.lookAt(myHrp.Position, Vector3.new(targetHrp.Position.X, myHrp.Position.Y, targetHrp.Position.Z))
+                    if modules.spy then modules.spy.log("In Range: Attacking...") end
+                    modules.combat.attack(npc, _G.SelectedWeapon)
                 end
             else
                 currentTarget = nil
@@ -81,6 +68,7 @@ local function startFarm()
     end)
 end
 
+-- UI elemek (Dropdown, Toggle, Unload) [cite: 2026-02-09, 2026-02-10]
 FarmTab:CreateDropdown({
    Name = "Weapon Type",
    Options = {"Melee", "Sword", "Blox Fruit"},
