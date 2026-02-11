@@ -1,4 +1,4 @@
--- MAIN.LUA (Matrix Hub - Manual-Style Distance Fix)
+-- MAIN.LUA (Matrix Hub - Framework Integrated)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local modules = _G.Matrix_Modules
 
@@ -13,13 +13,18 @@ local FarmTab = Window:CreateTab("Auto Farm")
 local SpyTab = Window:CreateTab("Debug Spy")
 local SettingsTab = Window:CreateTab("Settings")
 
-local logLabel = SpyTab:CreateLabel("Status: Ready")
-if modules and modules.spy then modules.spy.init(logLabel) end
+-- Spy biztonságos inicializálása [cite: 2026-02-10]
+local logLabel = SpyTab:CreateLabel("Status: Systems Standby")
+if modules and modules.spy then
+    modules.spy.init(logLabel)
+    modules.spy.log("Framework Spy Connected")
+end
 
 _G.AutoFarm = false
 _G.SelectedWeapon = "Melee"
 local currentTarget = nil
 
+-- Célpont keresés logikája [cite: 2026-02-10]
 local function getClosestNPC()
     if currentTarget and currentTarget:FindFirstChild("Humanoid") and currentTarget.Humanoid.Health > 0 then
         return currentTarget
@@ -38,6 +43,7 @@ local function getClosestNPC()
     return target
 end
 
+-- Fő Farm Hurok [cite: 2026-02-10]
 local function startFarm()
     task.spawn(function()
         while _G.AutoFarm do
@@ -47,28 +53,36 @@ local function startFarm()
                 local targetHrp = npc.HumanoidRootPart
                 local distance = (myHrp.Position - targetHrp.Position).Magnitude
                 
-                -- Karakter NPC felé fordítása (hogy az ütés iránya jó legyen)
+                -- Karakter irányba állítása az ütéshez [cite: 2026-02-10]
                 myHrp.CFrame = CFrame.lookAt(myHrp.Position, Vector3.new(targetHrp.Position.X, myHrp.Position.Y, targetHrp.Position.Z))
 
                 if distance > 4 then
                     if modules.spy then modules.spy.log("Approaching: " .. npc.Name) end
-                    -- Távolság tartása: 2.5 egységre állunk meg tőle
-                    modules.tween.To(targetHrp.CFrame * CFrame.new(0, 0, 2.5), 300)
+                    -- Távolság tartása (kb. 2.8 egység, hogy a Framework elérje) [cite: 2026-02-10]
+                    modules.tween.To(targetHrp.CFrame * CFrame.new(0, 0, 2.8), 300)
                 else
-                    -- Megállunk és ütjük
                     modules.tween.Stop()
-                    if modules.spy then modules.spy.log("In Range: Attacking...") end
-                    modules.combat.attack(npc, _G.SelectedWeapon)
+                    -- TÁMADÁS: Framework hívás hibakezeléssel [cite: 2026-02-10]
+                    local success, err = pcall(function()
+                        modules.combat.attack(npc, _G.SelectedWeapon)
+                    end)
+                    
+                    if success then
+                        if modules.spy then modules.spy.log("Framework Attack: Active") end
+                    else
+                        if modules.spy then modules.spy.log("Combat Error: " .. tostring(err)) end
+                    end
                 end
             else
+                if modules.spy then modules.spy.log("Searching for Targets...") end
                 currentTarget = nil
             end
-            task.wait(0.05)
+            task.wait(0.01) -- Extra gyors ciklus a folyamatos ütésért [cite: 2026-02-10]
         end
     end)
 end
 
--- UI elemek (Dropdown, Toggle, Unload) [cite: 2026-02-09, 2026-02-10]
+-- UI Interakciók [cite: 2026-02-09, 2026-02-10]
 FarmTab:CreateDropdown({
    Name = "Weapon Type",
    Options = {"Melee", "Sword", "Blox Fruit"},
@@ -81,7 +95,12 @@ FarmTab:CreateToggle({
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
-      if Value then startFarm() else if modules.tween then modules.tween.Stop() end end
+      if Value then 
+          startFarm() 
+      else 
+          if modules.tween then modules.tween.Stop() end
+          if modules.spy then modules.spy.log("Farm Paused") end
+      end
    end,
 })
 
