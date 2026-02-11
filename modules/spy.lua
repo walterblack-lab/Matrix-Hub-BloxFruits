@@ -1,23 +1,18 @@
 -- SPY MODULE (Matrix Hub - Logger)
 local spy = {}
-local logLabel = nil
+spy.label = nil
 
--- Inicializáljuk a Spy-t a UI elemmel
 function spy.init(labelElement)
-    logLabel = labelElement
+    spy.label = labelElement
     spy.log("Spy System Active")
 end
 
--- Üzenet küldése a menübe és a konzolba
 function spy.log(text)
     local timestamp = os.date("%H:%M:%S")
-    local formattedText = "[" .. timestamp .. "] " .. text
-    
-    if logLabel then
-        logLabel:Set("Status: " .. text)
+    if spy.label then
+        spy.label:Set("Status: " .. text)
     end
-    
-    print("[MATRIX SPY] " .. formattedText)
+    print("[MATRIX SPY " .. timestamp .. "]: " .. text)
 end
 
 return spy
