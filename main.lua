@@ -32,10 +32,10 @@ local function startFarm()
                 if hrp then
                     local distance = (hrp.Position - npc.HumanoidRootPart.Position).Magnitude
                     
-                    if distance > 12 then
+                    if distance > 7 then
                         -- Ha messze van, odamegyünk
                         if modules.tween then
-                            modules.tween.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0), 300)
+                            modules.tween.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), 300)
                         end
                     else
                         -- Ha odaértünk, megállunk és ütünk
