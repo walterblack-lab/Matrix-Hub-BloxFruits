@@ -1,4 +1,4 @@
--- MAIN.LUA (Matrix Hub - Precise Target Fix)
+-- MAIN.LUA (Precíziós Célpont Választó)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local modules = _G.Matrix_Modules
 
@@ -15,21 +15,26 @@ _G.SelectedWeapon = "Melee"
 local currentTarget = nil
 
 local function getClosestNPC()
+    -- Ha van rögzített célpont és még él, maradunk rajta
     if currentTarget and currentTarget:FindFirstChild("Humanoid") and currentTarget.Humanoid.Health > 0 then
         return currentTarget
     end
 
     local target, dist = nil, math.huge
-    -- JAVÍTÁS: Megkeressük a valódi NPC-ket az Enemies mappában
-    local enemyFolder = workspace:FindFirstChild("Enemies")
-    if enemyFolder then
-        for _, v in pairs(enemyFolder:GetChildren()) do
-            -- Csak azt nézzük, aminek van élete és teste
-            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                local d = (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if d < dist then 
+    local enemiesFolder = workspace:FindFirstChild("Enemies")
+    
+    if enemiesFolder then
+        -- Végigfésüljük a mappát a valódi NPC-kért
+        for _, enemy in pairs(enemiesFolder:GetChildren()) do
+            -- Ellenőrizzük, hogy valódi karakter-e (van Humanoid és RootPart)
+            local humanoid = enemy:FindFirstChild("Humanoid")
+            local hrp = enemy:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and hrp and humanoid.Health > 0 then
+                local d = (hrp.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if d < dist then
                     dist = d
-                    target = v 
+                    target = enemy
                 end
             end
         end
@@ -43,32 +48,31 @@ local function startFarm()
     task.spawn(function()
         while _G.AutoFarm do
             local npc = getClosestNPC()
-            if npc then
-                local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
-                local targetHRP = npc:FindFirstChild("HumanoidRootPart")
+            
+            if npc and npc:FindFirstChild("HumanoidRootPart") then
+                local myHrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+                local targetHrp = npc.HumanoidRootPart
+                local distance = (myHrp.Position - targetHrp.Position).Magnitude
                 
-                if targetHRP then
-                    local dist = (hrp.Position - targetHRP.Position).Magnitude
-                    
-                    if dist > 5 then
-                        modules.spy.log("Teleporting to: " .. npc.Name)
-                        -- Teleport az NPC fölé 5 egységgel
-                        modules.tween.To(targetHRP.CFrame * CFrame.new(0, 5, 0), 300)
-                    else
-                        modules.spy.log("Attacking: " .. npc.Name)
-                        modules.tween.Stop()
-                        modules.combat.attack(npc, _G.SelectedWeapon)
-                    end
+                if distance > 5 then
+                    modules.spy.log("Teleporting to NPC: " .. npc.Name)
+                    -- Teleport az NPC fölé, hogy ne akadjunk el
+                    modules.tween.To(targetHrp.CFrame * CFrame.new(0, 5, 0), 300)
+                else
+                    modules.spy.log("Target reached! Attacking...")
+                    modules.tween.Stop()
+                    modules.combat.attack(npc, _G.SelectedWeapon)
                 end
             else
-                modules.spy.log("No NPC found in range.")
+                modules.spy.log("Waiting for NPC to spawn...")
+                currentTarget = nil
             end
             task.wait(0.1)
         end
     end)
 end
 
--- UI elemek (Dropdown, Toggle, Unload) [cite: 2026-02-09, 2026-02-10]
+-- UI Beállítások
 FarmTab:CreateDropdown({
    Name = "Weapon Type",
    Options = {"Melee", "Sword", "Blox Fruit"},
