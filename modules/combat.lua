@@ -1,28 +1,26 @@
--- COMBAT MODULE (Final Fix)
+-- COMBAT MODULE (Final Stable Attack)
 local combat = {}
 
 function combat.attack(targetNpc, weaponType)
     local lp = game.Players.LocalPlayer
     local char = lp.Character
-    local spy = _G.Matrix_Modules.spy -- Spy elérése
-    
     if not char or not targetNpc then return end
     
-    -- Auto-Equip
+    -- Auto-Equip (Backpack-ből kézbe)
     local tool = char:FindFirstChildOfClass("Tool")
     if not tool or (tool and tool.ToolTip ~= weaponType) then
-        if spy then spy.log("Equipping: " .. weaponType) end
         local bpTool = lp.Backpack:FindFirstChild(weaponType) or lp.Backpack:FindFirstChildOfClass("Tool")
         if bpTool then char.Humanoid:EquipTool(bpTool) end
     end
 
+    -- Célzás és Támadás
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp and targetNpc:FindFirstChild("HumanoidRootPart") then
-        -- Pontos célzás
+        -- NPC felé nézés
         local targetPos = targetNpc.HumanoidRootPart.Position
         hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
         
-        -- ÜTÉS KÉNYSZERÍTÉSE (Mivel manuálisan működik neked, ezt a kettőt kombináljuk)
+        -- Fizikai és szerver oldali ütés kombinálva
         local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RigControllerEvent", true)
         if remote then
             remote:FireServer("WeaponClick")
