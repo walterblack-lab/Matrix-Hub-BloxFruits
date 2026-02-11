@@ -17,17 +17,16 @@ local function loadModule(name)
     end
 end
 
--- Sorrendben töltünk be, és megvárjuk a sikert
+-- Szigorú sorrend a nil hibák ellen
 local modulesToLoad = {"tween", "net", "combat"}
 for _, mod in ipairs(modulesToLoad) do
     local loaded = false
     repeat
         loaded = loadModule(mod)
-        if not loaded then task.wait(0.5) end -- Ha hiba van, vár és újrapróbálja
+        if not loaded then task.wait(0.5) end 
     until loaded
 end
 
--- Csak akkor megyünk a main-re, ha minden modul a memóriában van
 print("[MATRIX] Minden modul kész. Fő szkript indítása...")
 task.wait(0.1)
 loadstring(game:HttpGet("https://raw.githubusercontent.com/walterblack-lab/matrixv2/main/main.lua?cache=" .. math.random(1, 999)))()
