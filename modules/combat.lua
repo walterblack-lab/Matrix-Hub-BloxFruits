@@ -1,33 +1,36 @@
--- COMBAT MODULE (Spy Integrated)
+-- COMBAT MODULE (Final Fix)
 local combat = {}
-local spy = _G.Matrix_Modules.spy -- Spy modul elérése [cite: 2026-02-10]
 
 function combat.attack(targetNpc, weaponType)
     local lp = game.Players.LocalPlayer
     local char = lp.Character
+    local spy = _G.Matrix_Modules.spy -- Spy elérése
+    
     if not char or not targetNpc then return end
     
+    -- Auto-Equip
     local tool = char:FindFirstChildOfClass("Tool")
     if not tool or (tool and tool.ToolTip ~= weaponType) then
-        spy.log("Equipping: " .. weaponType)
+        if spy then spy.log("Equipping: " .. weaponType) end
         local bpTool = lp.Backpack:FindFirstChild(weaponType) or lp.Backpack:FindFirstChildOfClass("Tool")
         if bpTool then char.Humanoid:EquipTool(bpTool) end
     end
 
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp and targetNpc:FindFirstChild("HumanoidRootPart") then
-        hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(targetNpc.HumanoidRootPart.Position.X, hrp.Position.Y, targetNpc.HumanoidRootPart.Position.Z))
+        -- Pontos célzás
+        local targetPos = targetNpc.HumanoidRootPart.Position
+        hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
         
-        -- Remote ellenőrzés logolással [cite: 2026-02-10]
+        -- ÜTÉS KÉNYSZERÍTÉSE (Mivel manuálisan működik neked, ezt a kettőt kombináljuk)
         local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RigControllerEvent", true)
         if remote then
-            spy.log("Attacking " .. targetNpc.Name .. " (Remote OK)")
             remote:FireServer("WeaponClick")
-        else
-            spy.log("ERROR: RigControllerEvent MISSING!")
         end
         
-        if tool then tool:Activate() end
+        if tool then 
+            tool:Activate() 
+        end
     end
 end
 
